@@ -47,8 +47,10 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 // Definicion del puerto
-//const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-//app.listen(PORT, () => {
-//console.log(`Servidor corriendo en el puerto ${PORT}`);
-//});
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
+
+module.exports = app;
