@@ -1,3 +1,5 @@
+//Cliente supabase
+
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config(); // Carga las variables del archivo .env
 

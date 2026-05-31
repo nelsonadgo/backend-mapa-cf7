@@ -1,6 +1,10 @@
+//Configuracion de express, rutas y errors
+
 const express = require('express');
 const cors = require('cors');
 const supabase = require('./config/supabase');
+const espaciosRoutes = require('./modules/espacios/espacios.routes');
+const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
 
