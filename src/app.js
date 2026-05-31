@@ -15,6 +15,7 @@ const app = express();
 // Midlewares globales
 app.use(cors());
 app.use(express.json());
+app.use("/api/espacios", espaciosRoutes);
 
 // Ruta de prueba
 app.get("/api/health", (req, res) => {
@@ -47,10 +48,13 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 // Definicion del puerto
-const PORT = process.env.PORT || 3000;
+//const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
+//app.listen(PORT, () => {
+//console.log(`Servidor corriendo en el puerto ${PORT}`);
+//});
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;
