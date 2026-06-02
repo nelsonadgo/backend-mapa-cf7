@@ -5,6 +5,8 @@ const express = require("express");
 const cors = require("cors");
 const supabase = require("./config/supabase");
 const espaciosRoutes = require("./modules/espacios/espacios.routes");
+const reportesRoutes = require("./modules/reportes/reportes.routes");
+
 const {
   notFoundHandler,
   errorHandler,
@@ -16,6 +18,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api/espacios", espaciosRoutes);
+app.use("/api/reportes", reportesRoutes);
 
 // Ruta de prueba
 app.get("/api/health", (req, res) => {
