@@ -1,4 +1,6 @@
 const espaciosService = require("./espacios.services.js");
+const uploadToCloudinary = require("../../utils/uploadToCloudinary");
+
 const {
   normalizeEspacioPayload,
   normalizeListQuery,
@@ -28,6 +30,10 @@ const getEspacio = async (req, res) => {
 
 const createEspacio = async (req, res) => {
   const payload = normalizeEspacioPayload(req.body);
+  if (req.file) {
+    const uploadResult = await uploadToCloudinary(req.file.buffer);
+    payload.foto_url = uploadResult.secure_url;
+  }
   const espacio = await espaciosService.createEspacio(payload);
 
   res.status(201).json({
