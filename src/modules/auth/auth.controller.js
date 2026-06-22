@@ -6,7 +6,7 @@ const httpError = require("../../utils/httpError");
 
 // Registro de usuario
 const register = async (req, res) => {
-  // Ajuste 1: Cambiamos el rol por defecto a "visitante" para que el ENUM de Postgres no falle
+  // Cambiamos el rol por defecto a "visitante" para que el ENUM de Postgres no falle
   const { legajo, nombre, password, rol = "visitante" } = req.body;
 
   if (!legajo || !password || !nombre) {
