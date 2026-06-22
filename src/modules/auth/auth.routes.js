@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const asyncHandler = require("../../utils/asyncHandler");
+const authController = require("./auth.controller");
 
 const router = Router();
 
@@ -9,18 +11,7 @@ router.get("/", (req, res) => {
   });
 });
 
-router.post("/login", (req, res) => {
-  res.json({
-    status: "success",
-    mensaje: "Login pendiente de implementación",
-  });
-});
-
-router.post("/register", (req, res) => {
-  res.status(201).json({
-    status: "success",
-    mensaje: "Registro pendiente de implementación",
-  });
-});
+router.post("/login", asyncHandler(authController.login));
+router.post("/register", asyncHandler(authController.register));
 
 module.exports = router;
