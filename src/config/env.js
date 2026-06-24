@@ -12,7 +12,6 @@ module.exports = {
   reportesTable: process.env.SUPABASE_REPORTES_TABLE || "reportes",
   recorridosTable: process.env.SUPABASE_RECORRIDOS_TABLE || "recorridos",
   perfilesTable: process.env.SUPABASE_PERFILES_TABLE || "perfiles",
-  perfilesTable: process.env.SUPABASE_PERFILES_TABLE || "perfiles",
 
   jwtSecret: process.env.JWT_SECRET || "dev_secret_change_me",
 
