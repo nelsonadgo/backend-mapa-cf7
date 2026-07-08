@@ -1,57 +1,5 @@
-let recorridosMock = [
-  {
-    id: 1,
-    nombre: "Entrada principal a Informes",
-    descripcion: "Recorrido básico desde el ingreso hasta el área de Informes.",
-    origen: "Entrada principal",
-    destino: "Informes / Regencia",
-    sector_destino: "Sector 3",
-    pasos: [
-      "Ingresar por la entrada principal.",
-      "Avanzar hacia el Sector 3.",
-      "Ubicar el área de Informes junto a Regencia.",
-    ],
-    distancia_metros: 12,
-    duracion_estimada_min: 2,
-    es_accesible: true,
-    estado: "activo",
-  },
-  {
-    id: 2,
-    nombre: "Entrada principal a Aula 3 - SUM",
-    descripcion: "Recorrido básico desde el ingreso hasta Aula 3 - SUM.",
-    origen: "Entrada principal",
-    destino: "Aula 3 - SUM",
-    sector_destino: "Sector 4",
-    pasos: [
-      "Ingresar por la entrada principal.",
-      "Avanzar por el pasillo central.",
-      "Dirigirse hacia el Sector 4.",
-      "Ubicar Aula 3 - SUM entre Aula 2 y Aula 4.",
-    ],
-    distancia_metros: 25,
-    duracion_estimada_min: 3,
-    es_accesible: true,
-    estado: "activo",
-  },
-  {
-    id: 3,
-    nombre: "Entrada principal a Electricidad",
-    descripcion: "Recorrido básico hacia el taller de Electricidad.",
-    origen: "Entrada principal",
-    destino: "Electricidad",
-    sector_destino: "Sector 1",
-    pasos: [
-      "Ingresar al Sector 1.",
-      "Avanzar por el pasillo principal.",
-      "Ubicar Electricidad sobre el lado izquierdo.",
-    ],
-    distancia_metros: 18,
-    duracion_estimada_min: 3,
-    es_accesible: true,
-    estado: "activo",
-  },
-];
+const supabase = require("../../config/supabase");
+const env = require("../../config/env");
 
 const findAll = async ({
   limit = 20,
@@ -63,99 +11,75 @@ const findAll = async ({
   accesible,
   estado,
 }) => {
-  let data = [...recorridosMock];
+  let query = supabase
+    .from(env.recorridosTable)
+    .select("*", { count: "exact" });
 
   if (search) {
-    const term = search.toLowerCase();
-
-    data = data.filter(
-      (recorrido) =>
-        recorrido.nombre.toLowerCase().includes(term) ||
-        recorrido.descripcion.toLowerCase().includes(term) ||
-        recorrido.origen.toLowerCase().includes(term) ||
-        recorrido.destino.toLowerCase().includes(term) ||
-        recorrido.sector_destino.toLowerCase().includes(term),
+    query = query.or(
+      `nombre.ilike.%${search}%,descripcion.ilike.%${search}%,origen.ilike.%${search}%,destino.ilike.%${search}%,sector_destino.ilike.%${search}%`
     );
   }
 
-  if (origen) {
-    data = data.filter((recorrido) =>
-      recorrido.origen.toLowerCase().includes(String(origen).toLowerCase()),
-    );
-  }
+  if (origen) query = query.ilike("origen", `%${origen}%`);
+  if (destino) query = query.ilike("destino", `%${destino}%`);
+  if (sector) query = query.ilike("sector_destino", `%${sector}%`);
+  if (accesible !== undefined) query = query.eq("es_accesible", accesible);
+  if (estado) query = query.eq("estado", estado);
 
-  if (destino) {
-    data = data.filter((recorrido) =>
-      recorrido.destino.toLowerCase().includes(String(destino).toLowerCase()),
-    );
-  }
+  // Paginación en Supabase
+  query = query.range(offset, offset + limit - 1);
 
-  if (sector) {
-    data = data.filter((recorrido) =>
-      recorrido.sector_destino
-        .toLowerCase()
-        .includes(String(sector).toLowerCase()),
-    );
-  }
+  const { data, count, error } = await query;
+  if (error) throw error;
 
-  if (accesible !== undefined) {
-    data = data.filter((recorrido) => recorrido.es_accesible === accesible);
-  }
-
-  if (estado) {
-    data = data.filter((recorrido) => recorrido.estado === estado);
-  }
-
-  const count = data.length;
-  const paginatedData = data.slice(offset, offset + limit);
-
-  return {
-    data: paginatedData,
-    count,
-  };
+  return { data, count };
 };
 
 const findById = async (id) => {
-  return recorridosMock.find((recorrido) => recorrido.id === Number(id));
+  const { data, error } = await supabase
+    .from(env.recorridosTable)
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data || null;
 };
 
 const create = async (payload) => {
-  const nuevoRecorrido = {
-    id: recorridosMock.length + 1,
-    estado: "activo",
-    ...payload,
-  };
+  const { data, error } = await supabase
+    .from(env.recorridosTable)
+    .insert([payload])
+    .select()
+    .single();
 
-  recorridosMock.push(nuevoRecorrido);
-
-  return nuevoRecorrido;
+  if (error) throw error;
+  return data;
 };
 
 const updateById = async (id, payload) => {
-  const index = recorridosMock.findIndex(
-    (recorrido) => recorrido.id === Number(id),
-  );
+  const { data, error } = await supabase
+    .from(env.recorridosTable)
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
 
-  if (index === -1) return null;
-
-  recorridosMock[index] = {
-    ...recorridosMock[index],
-    ...payload,
-  };
-
-  return recorridosMock[index];
+  if (error && error.code !== "PGRST116") throw error;
+  return data || null;
 };
 
 const deleteById = async (id) => {
-  const index = recorridosMock.findIndex(
-    (recorrido) => recorrido.id === Number(id),
-  );
+  const { data, error } = await supabase
+    .from(env.recorridosTable)
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
 
-  if (index === -1) return null;
-
-  const eliminado = recorridosMock.splice(index, 1);
-
-  return eliminado[0];
+  if (error && error.code !== "PGRST116") throw error;
+  return data || null;
 };
 
 module.exports = {

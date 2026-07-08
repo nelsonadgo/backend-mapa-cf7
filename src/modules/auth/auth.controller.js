@@ -6,14 +6,11 @@ const httpError = require("../../utils/httpError");
 
 // Registro de usuario
 const register = async (req, res) => {
-  // Ajuste 1: Cambiamos el rol por defecto a "visitante" para que el ENUM de Postgres no falle
+  // Cambiamos el rol por defecto a "visitante" para que el ENUM de Postgres no falle
   const { legajo, nombre, password, rol = "visitante" } = req.body;
 
   if (!legajo || !password || !nombre) {
-    throw httpError(
-      400,
-      "El legajo (o DNI), nombre y contraseña son obligatorios",
-    );
+    throw httpError(400, "El legajo (o DNI), nombre y contraseña son obligatorios");
   }
 
   // Verificar si el legajo ya existe
@@ -24,10 +21,7 @@ const register = async (req, res) => {
     .single();
 
   if (usuarioExistente) {
-    throw httpError(
-      400,
-      "Ya existe un usuario registrado con ese número de identificación",
-    );
+    throw httpError(400, "Ya existe un usuario registrado con ese número de identificación");
   }
 
   // Encriptar la contraseña
@@ -37,9 +31,7 @@ const register = async (req, res) => {
   // Guardar en la tabla perfiles
   const { data: nuevoUsuario, error } = await supabase
     .from(env.perfilesTable)
-    .insert([
-      { legajo, nombre_completo: nombre, password: hashedPassword, rol },
-    ])
+    .insert([{ legajo, nombre_completo: nombre, password: hashedPassword, rol }])
     .select("id, legajo, nombre_completo, rol")
     .single();
 
@@ -81,7 +73,7 @@ const login = async (req, res) => {
   const token = jwt.sign(
     { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
     env.jwtSecret,
-    { expiresIn: "8h" }, // El token dura 8 horas
+    { expiresIn: "8h" } // El token dura 8 horas
   );
 
   res.json({
