@@ -29,13 +29,22 @@ const register = async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   // Guardar en la tabla perfiles
-  const { data: nuevoUsuario, error } = await supabase
+  const { data: nuevoUsuario, error: errorUsuario } = await supabase
     .from(env.perfilesTable)
     .insert([{ legajo, nombre_completo: nombre, password: hashedPassword, rol }])
     .select("id, legajo, nombre_completo, rol")
     .single();
 
-  if (error) throw error;
+  if (errorUsuario) throw errorUsuario;
+
+  // Crear automáticamente el registro de preferencias de accesibilidad enlazado al ID del nuevo usuario
+  const { error: errorPreferencias } = await supabase
+    .from("preferencias_accesibilidad")
+    .insert([{ perfil_id: nuevoUsuario.id }]);
+  
+  if (errorPreferencias) {   
+    throw errorPreferencias;
+  }
 
   res.status(201).json({
     status: "success",
