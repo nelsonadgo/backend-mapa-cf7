@@ -9,6 +9,7 @@ module.exports = {
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
 
   espaciosTable: process.env.SUPABASE_ESPACIOS_TABLE || "espacios",
+  reporteTable: process.env.SUPABASE_REPORTE_TABLE || "reportes",
   reportesTable: process.env.SUPABASE_REPORTES_TABLE || "reportes",
   recorridosTable: process.env.SUPABASE_RECORRIDOS_TABLE || "recorridos",
   perfilesTable: process.env.SUPABASE_PERFILES_TABLE || "perfiles",
@@ -18,4 +19,7 @@ module.exports = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+
+  jwtSecret: process.env.JWT_SECRET,
+  perfilesTable: "perfiles",
 };

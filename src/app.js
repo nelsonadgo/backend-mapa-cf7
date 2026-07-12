@@ -24,6 +24,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/espacios", espaciosRoutes);
 app.use("/api/reportes", reportesRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/recorridos", recorridosRoutes);
 
 // Ruta de prueba
