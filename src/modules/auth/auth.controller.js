@@ -10,7 +10,10 @@ const register = async (req, res) => {
   const { legajo, nombre, password, rol = "visitante" } = req.body;
 
   if (!legajo || !password || !nombre) {
-    throw httpError(400, "El legajo (o DNI), nombre y contraseña son obligatorios");
+    throw httpError(
+      400,
+      "El legajo (o DNI), nombre y contraseña son obligatorios",
+    );
   }
 
   // Verificar si el legajo ya existe
@@ -21,7 +24,10 @@ const register = async (req, res) => {
     .single();
 
   if (usuarioExistente) {
-    throw httpError(400, "Ya existe un usuario registrado con ese número de identificación");
+    throw httpError(
+      400,
+      "Ya existe un usuario registrado con ese número de identificación",
+    );
   }
 
   // Encriptar la contraseña
@@ -31,7 +37,9 @@ const register = async (req, res) => {
   // Guardar en la tabla perfiles
   const { data: nuevoUsuario, error: errorUsuario } = await supabase
     .from(env.perfilesTable)
-    .insert([{ legajo, nombre_completo: nombre, password: hashedPassword, rol }])
+    .insert([
+      { legajo, nombre_completo: nombre, password: hashedPassword, rol },
+    ])
     .select("id, legajo, nombre_completo, rol")
     .single();
 
@@ -41,8 +49,8 @@ const register = async (req, res) => {
   const { error: errorPreferencias } = await supabase
     .from("preferencias_accesibilidad")
     .insert([{ perfil_id: nuevoUsuario.id }]);
-  
-  if (errorPreferencias) {   
+
+  if (errorPreferencias) {
     throw errorPreferencias;
   }
 
@@ -82,7 +90,7 @@ const login = async (req, res) => {
   const token = jwt.sign(
     { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
     env.jwtSecret,
-    { expiresIn: "8h" } // El token dura 8 horas
+    { expiresIn: "8h" }, // El token dura 8 horas
   );
 
   res.json({
@@ -98,7 +106,87 @@ const login = async (req, res) => {
   });
 };
 
+// Inicio de sesión o registro con Google
+const googleLogin = async (req, res) => {
+  const { tokenGoogle } = req.body;
+
+  if (!tokenGoogle) {
+    throw httpError(400, "El token de Google es obligatorio");
+  }
+
+  try {
+    // 1. Le pedimos a Google que nos valide si el token es real y nos dé los datos del usuario
+    const googleResponse = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${tokenGoogle}`,
+    );
+    const googleUser = await googleResponse.json();
+
+    if (googleUser.error_description) {
+      throw httpError(401, "Token de Google inválido o expirado");
+    }
+
+    // Usamos el email de Google o el "sub" (ID único de Google) como identificador único
+    const emailGoogle = googleUser.email;
+    const nombreGoogle = googleUser.name;
+
+    // 2. Buscamos si el usuario ya existe en tu tabla de perfiles usando el email como "legajo" o identificador
+    let { data: usuario, error } = await supabase
+      .from(env.perfilesTable)
+      .select("*")
+      .eq("legajo", emailGoogle)
+      .maybeSingle(); // Usamos maybeSingle para que no rompa si no encuentra nada
+
+    // 3. Si no existe, lo registramos automáticamente (Registro automático por Google)
+    if (!usuario) {
+      const { data: nuevoUsuario, error: errorInsert } = await supabase
+        .from(env.perfilesTable)
+        .insert([
+          {
+            legajo: emailGoogle, // Guardamos el mail como identificador
+            nombre_completo: nombreGoogle,
+            password: "LOGIN_CON_GOOGLE", // No necesita contraseña real
+            rol: "visitante",
+          },
+        ])
+        .select("*")
+        .single();
+
+      if (errorInsert) throw errorInsert;
+      usuario = nuevoUsuario;
+
+      // Creamos sus preferencias de accesibilidad por defecto
+      await supabase
+        .from("preferencias_accesibilidad")
+        .insert([{ perfil_id: usuario.id }]);
+    }
+
+    // 4. Generamos TU propio Token (JWT) de tu aplicación, igual que en el login tradicional
+    const token = jwt.sign(
+      { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
+      env.jwtSecret,
+      { expiresIn: "8h" },
+    );
+
+    // 5. Devolvemos la respuesta exitosa
+    res.json({
+      status: "success",
+      mensaje: "Inicio de sesión con Google exitoso",
+      token,
+      usuario: {
+        id: usuario.id,
+        legajo: usuario.legajo,
+        nombre: usuario.nombre_completo,
+        rol: usuario.rol,
+      },
+    });
+  } catch (err) {
+    throw httpError(500, "Error interno al procesar el login con Google");
+  }
+};
+
+// Exportamos de manera limpia al final de todo el archivo
 module.exports = {
   register,
   login,
+  googleLogin,
 };
