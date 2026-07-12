@@ -180,6 +180,10 @@ const googleLogin = async (req, res) => {
       },
     });
   } catch (err) {
+    if (err.statusCode) {
+      throw err;
+    }
+    console.error("Error inesperado en Google Login", err);
     throw httpError(500, "Error interno al procesar el login con Google");
   }
 };
