@@ -26,9 +26,14 @@ create table preferencias_accesibilidad (
 	id uuid primary key default uuid_generate_v4(),
 	perfil_id uuid unique not null references perfiles(id) on delete cascade,
 	requiere_ascensor boolean default false,
+	contador_ascensor INT DEFAULT 0,
 	evita_escaleras boolean default false,
+	contador_escaleras INT DEFAULT 0,
 	requiere_rampa boolean default false,
+	contador_rampa INT DEFAULT 0,
 	alto_contraste boolean default false,
+	contador_alto_contraste INT DEFAULT 0,
+	contador_movimiento_reducido INT DEFAULT 0;
 	escala_fuente int default 100 check (escala_fuente >= 50 and escala_fuente <= 200),
 	movimiento_reducido boolean default false,
 	fecha_actualizacion timestamp default now()

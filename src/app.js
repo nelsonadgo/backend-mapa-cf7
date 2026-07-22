@@ -9,6 +9,9 @@ const espaciosRoutes = require("./modules/espacios/espacios.routes");
 const reportesRoutes = require("./modules/reportes/reportes.routes");
 const recorridosRoutes = require("./modules/recorridos/recorridos.routes");
 const authRoutes = require("./modules/auth/auth.routes");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+const path = require("path");
 
 const {
   notFoundHandler,
@@ -16,6 +19,44 @@ const {
 } = require("./middlewares/error.middleware");
 
 const app = express();
+
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "API de Accesibilidad y Autenticación",
+      version: "1.0.0",
+      description: "Documentación de endpoints para login, usuarios y preferencias",
+    },
+    servers: [
+      {
+        url: "http://localhost:3000", // Cambiá según tu puerto/URL de desarrollo
+        description: "Servidor local",
+      },
+    ],
+    // Si usás JWT para proteger rutas, definimos la seguridad global
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+  },
+  // Archivos donde Swagger buscará los comentarios JSDoc
+  apis: [
+    "./src/modules/**/*.js",
+    "./modules/**/*.js"
+  ],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+console.log("Rutas detectadas por Swagger:", Object.keys(swaggerSpec.paths || {}));
+
+// Servir la interfaz gráfica de Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Midlewares globales
 app.use(cors());
@@ -33,6 +74,13 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     mensaje: "La API del CF7 está funcionando correctamente.",
     fecha: new Date().toISOString(),
+  });
+});
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    mensaje: "API Online",
   });
 });
 
