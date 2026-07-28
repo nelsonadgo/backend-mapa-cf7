@@ -63,6 +63,7 @@ const register = async (req, res) => {
 
 // Inicio de sesión (Login)
 const login = async (req, res) => {
+  console.log("ENTRO AL LOGIN");
   const { legajo, password } = req.body;
 
   if (!legajo || !password) {
@@ -76,16 +77,27 @@ const login = async (req, res) => {
     .eq("legajo", legajo)
     .single();
 
+  console.log("LEGAJO RECIBIDO:", legajo);
+  console.log("ERROR SUPABASE:", error);
+  console.log("USUARIO:", usuario);
+
   if (error || !usuario) {
     throw httpError(401, "Credenciales inválidas");
   }
 
   // Comparar la contraseña ingresada con la encriptada
+  console.log("Password enviada:", password);
+  console.log("Password en BD:", usuario.password);
   const passwordValida = await bcrypt.compare(password, usuario.password);
+
+  console.log("Resultado compare:", passwordValida);
+  console.log("PASSWORD VALIDA:", passwordValida);
+
   if (!passwordValida) {
     throw httpError(401, "Credenciales inválidas");
   }
 
+  console.log("JWT SECRET AL FIRMAR:", env.jwtSecret);
   // Generar el Token (JWT)
   const token = jwt.sign(
     { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
@@ -162,7 +174,10 @@ const googleLogin = async (req, res) => {
 
     // 4. Generamos TU propio Token (JWT) de tu aplicación, igual que en el login tradicional
     const token = jwt.sign(
-      { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
+      { id: usuario.id,
+         legajo: usuario.legajo,
+          rol: usuario.rol
+         },
       env.jwtSecret,
       { expiresIn: "8h" },
     );
@@ -186,6 +201,8 @@ const googleLogin = async (req, res) => {
     console.error("Error inesperado en Google Login", err);
     throw httpError(500, "Error interno al procesar el login con Google");
   }
+
+  console.log("TOKEN GENERADO:", token);
 };
 
 // Exportamos de manera limpia al final de todo el archivo

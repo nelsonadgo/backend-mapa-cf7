@@ -13,6 +13,8 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const path = require("path");
 
+const analyticsRoutes = require("./modules/analytics/analytics.routes");
+
 const {
   notFoundHandler,
   errorHandler,
@@ -26,7 +28,8 @@ const swaggerOptions = {
     info: {
       title: "API de Accesibilidad y Autenticación",
       version: "1.0.0",
-      description: "Documentación de endpoints para login, usuarios y preferencias",
+      description:
+        "Documentación de endpoints para login, usuarios y preferencias",
     },
     servers: [
       {
@@ -46,14 +49,14 @@ const swaggerOptions = {
     },
   },
   // Archivos donde Swagger buscará los comentarios JSDoc
-  apis: [
-    "./src/modules/**/*.js",
-    "./modules/**/*.js"
-  ],
+  apis: ["./src/modules/**/*.js", "./modules/**/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-console.log("Rutas detectadas por Swagger:", Object.keys(swaggerSpec.paths || {}));
+console.log(
+  "Rutas detectadas por Swagger:",
+  Object.keys(swaggerSpec.paths || {}),
+);
 
 // Servir la interfaz gráfica de Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -65,8 +68,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/espacios", espaciosRoutes);
 app.use("/api/reportes", reportesRoutes);
-app.use("/api/auth", authRoutes);
 app.use("/api/recorridos", recorridosRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Ruta de prueba
 app.get("/api/health", (req, res) => {
