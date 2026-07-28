@@ -100,7 +100,7 @@ router.post("/register", authController.register);
 router.post("/login", authController.login);
 /**
  * @swagger
- * /api/auth/google-login:
+ * /api/auth/google:
  *   post:
  *     summary: Iniciar sesión o registrarse automáticamente mediante Google OAuth
  *     tags:
