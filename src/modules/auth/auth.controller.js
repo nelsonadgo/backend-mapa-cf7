@@ -7,17 +7,15 @@ const httpError = require("../../utils/httpError");
 // Registro de usuario
 const register = async (req, res, next) => {
   try {
-    // Cambiamos el rol por defecto a "visitante" para que el ENUM de Postgres no falle
     const { legajo, nombre, password, rol = "visitante" } = req.body;
 
     if (!legajo || !password || !nombre) {
       throw httpError(
         400,
-        "El legajo (o DNI), nombre y contraseña son obligatorios"
+        "El legajo (o DNI), nombre y contraseña son obligatorios",
       );
     }
 
-    // Verificar si el legajo ya existe
     const { data: usuarioExistente } = await supabase
       .from(env.perfilesTable)
       .select("id")
@@ -27,15 +25,13 @@ const register = async (req, res, next) => {
     if (usuarioExistente) {
       throw httpError(
         400,
-        "Ya existe un usuario registrado con ese número de identificación"
+        "Ya existe un usuario registrado con ese número de identificación",
       );
     }
 
-    // Encriptar la contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Guardar en la tabla perfiles
     const { data: nuevoUsuario, error: errorUsuario } = await supabase
       .from(env.perfilesTable)
       .insert([
@@ -46,7 +42,6 @@ const register = async (req, res, next) => {
 
     if (errorUsuario) throw errorUsuario;
 
-    // Crear automáticamente el registro de preferencias de accesibilidad
     const { error: errorPreferencias } = await supabase
       .from("preferencias_accesibilidad")
       .insert([{ perfil_id: nuevoUsuario.id }]);
@@ -72,7 +67,6 @@ const login = async (req, res, next) => {
       throw httpError(400, "El legajo/DNI y la contraseña son obligatorios");
     }
 
-    // Buscar al usuario por legajo
     const { data: usuario, error } = await supabase
       .from(env.perfilesTable)
       .select("*")
@@ -89,11 +83,10 @@ const login = async (req, res, next) => {
       throw httpError(401, "Credenciales inválidas");
     }
 
-    // Generar el Token (JWT)
     const token = jwt.sign(
       { id: usuario.id, legajo: usuario.legajo, rol: usuario.rol },
       env.jwtSecret,
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
     return res.json({
@@ -121,14 +114,13 @@ const googleLogin = async (req, res, next) => {
       throw httpError(400, "El token de Google es obligatorio");
     }
 
-    // 1. Le pedimos a Google que nos valide el token y nos dé los datos del usuario
+    // 1. Validar token con Google
     const googleResponse = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${tokenGoogle}`
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${tokenGoogle}`,
     );
     const googleUser = await googleResponse.json();
 
     if (googleUser.error || googleUser.error_description) {
-      console.error("Respuesta de error de Google:", googleUser);
       throw httpError(401, "Token de Google inválido o expirado");
     }
 
@@ -136,15 +128,25 @@ const googleLogin = async (req, res, next) => {
     const nombreGoogle = googleUser.name || emailGoogle;
 
     if (!emailGoogle) {
-      throw httpError(400, "No se pudo obtener el email desde la cuenta de Google");
+      throw httpError(
+        400,
+        "No se pudo obtener el email desde la cuenta de Google",
+      );
     }
 
-    // 2. Buscamos si el usuario ya existe en perfiles usando el email
-    let { data: usuario } = await supabase
+    // 2. Buscamos al usuario en Supabase
+    let { data: usuario, error: errorBusqueda } = await supabase
       .from(env.perfilesTable)
       .select("*")
       .eq("legajo", emailGoogle)
       .maybeSingle();
+
+    if (errorBusqueda) {
+      throw httpError(
+        500,
+        `Error de Supabase al buscar: ${errorBusqueda.message}`,
+      );
+    }
 
     // 3. Si no existe, lo registramos automáticamente
     if (!usuario) {
@@ -161,13 +163,22 @@ const googleLogin = async (req, res, next) => {
         .select("*")
         .single();
 
-      if (errorInsert) throw errorInsert;
+      if (errorInsert) {
+        throw httpError(
+          500,
+          `Error de Supabase al insertar usuario: ${errorInsert.message}`,
+        );
+      }
       usuario = nuevoUsuario;
 
-      // Crear preferencias de accesibilidad por defecto
-      await supabase
+      // Crear preferencias de accesibilidad
+      const { error: errorPref } = await supabase
         .from("preferencias_accesibilidad")
         .insert([{ perfil_id: usuario.id }]);
+
+      if (errorPref) {
+        console.error("Error al crear preferencias:", errorPref);
+      }
     }
 
     // 4. Generamos el JWT de la aplicación
@@ -178,12 +189,9 @@ const googleLogin = async (req, res, next) => {
         rol: usuario.rol,
       },
       env.jwtSecret,
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
-    console.log("✅ LOGIN CON GOOGLE EXITOSO PARA:", usuario.legajo);
-
-    // 5. Devolvemos la respuesta
     return res.json({
       status: "success",
       mensaje: "Inicio de sesión con Google exitoso",
@@ -196,7 +204,10 @@ const googleLogin = async (req, res, next) => {
       },
     });
   } catch (err) {
-    next(err);
+    return res.status(err.statusCode || 500).json({
+      status: "error",
+      mensaje: err.message || "Error interno al procesar el login con Google",
+    });
   }
 };
 
