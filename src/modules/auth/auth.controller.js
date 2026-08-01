@@ -120,6 +120,9 @@ const googleLogin = async (req, res, next) => {
     );
     const googleUser = await googleResponse.json();
 
+    console.log("Respuesta de Google:", googleResponse.status);
+    console.log("Usuario Google:", googleUser);
+
     if (googleUser.error || googleUser.error_description) {
       throw httpError(401, "Token de Google inválido o expirado");
     }
@@ -140,6 +143,11 @@ const googleLogin = async (req, res, next) => {
       .select("*")
       .eq("legajo", emailGoogle)
       .maybeSingle();
+
+    console.log("Resultado búsqueda Supabase:", {
+      usuarioEncontrado: !!usuario,
+      error: errorBusqueda?.message || null,
+    });
 
     if (errorBusqueda) {
       throw httpError(
@@ -181,7 +189,28 @@ const googleLogin = async (req, res, next) => {
       }
     }
 
+    const { error: errorAnalytics } = await supabase
+      .from("log_in_events")
+      .insert([
+        {
+          user_id: usuario.id,
+          user_type: usuario.rol || "Usuario general",
+          is_first_visit: false,
+          device_type: "computadora",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (errorAnalytics) {
+      console.error(
+        "Error al registrar evento en log_in_events:",
+        errorAnalytics,
+      );
+    }
+
     // 4. Generamos el JWT de la aplicación
+    console.log("Generando JWT...");
+    console.log("JWT_SECRET existe:", !!env.jwtSecret);
     const token = jwt.sign(
       {
         id: usuario.id,
@@ -204,9 +233,12 @@ const googleLogin = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.error("Error en googleLogin:", err);
+
     return res.status(err.statusCode || 500).json({
       status: "error",
-      mensaje: err.message || "Error interno al procesar el login con Google",
+      mensaje: err?.message || "Error interno al procesar el login con Google",
+      detalles: err?.stack || String(err),
     });
   }
 };
