@@ -235,10 +235,11 @@ const googleLogin = async (req, res, next) => {
   } catch (err) {
     console.error("Error en googleLogin:", err);
 
-    return res.status(err.statusCode || 500).json({
+    return res.status(500).json({
       status: "error",
-      mensaje: err?.message || "Error interno al procesar el login con Google",
-      detalles: err?.stack || String(err),
+      mensaje: "Error interno al procesar el login con Google",
+      error_real: err.message,
+      detalles: err.stack || String(err),
     });
   }
 };
