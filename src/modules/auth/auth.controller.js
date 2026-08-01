@@ -237,7 +237,7 @@ const googleLogin = async (req, res, next) => {
 
     return res.status(500).json({
       status: "error",
-      mensaje: "Error interno al procesar el login con Google",
+      mensaje: "Prueba de mensaje error inicio Google",
       error_real: err?.message || String(err),
 
       detalles: err?.stack,
